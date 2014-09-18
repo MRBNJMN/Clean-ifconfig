@@ -13,6 +13,17 @@
 <p>Standard: <code>$ ./clean-ifconfig.pl</code> <br>
 Extended: <code>$ ./clean-ifconfig.pl -e</code></p>
 
+<h2>Known Issues</h2>
+
+<p>The RegEx to pull text after <code>Link encap:</code> takes a shortcut. There's at least two possibilities for this output:</p>
+
+<pre><code>Link encap:Ethernet HWaddr ... \n
+or
+Link encap:Local Loopback \n
+</code></pre>
+
+<p>Right now, the solution simply looks for <code>Ethernet|Local Loopback</code> and captures it accordingly. A better solution would be to capture the actual text (either one or two words) with the condition that HWaddr may or may not follow.</p>
+
 <h2>Author</h2>
 
 <p>Ben Wheeler <br>

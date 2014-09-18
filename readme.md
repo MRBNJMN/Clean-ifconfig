@@ -10,6 +10,15 @@ clean-ifconfig.pl - Contains all code. Run in a Perl environment.
 Standard: `$ ./clean-ifconfig.pl`  
 Extended: `$ ./clean-ifconfig.pl -e`
 
+## Known Issues
+The RegEx to pull text after `Link encap:` takes a shortcut. There's at least two possibilities for this output:
+
+    Link encap:Ethernet HWaddr ... \n
+    or
+    Link encap:Local Loopback \n
+
+Right now, the solution simply looks for `Ethernet|Local Loopback` and captures it accordingly. A better solution would be to capture the actual text (either one or two words) with the condition that HWaddr may or may not follow.
+
 ## Author
 Ben Wheeler  
 Altair Engineering  

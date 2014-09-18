@@ -21,11 +21,15 @@
 use 5.016;	# Implies "use strict"
 use warnings;
 use utf8;
-use Getopt::Std;
+use Getopt::Long;
+use Pod::Usage;
 
 # -e will be used to display "extended" information that's not typically useful
-my %options = ();
-getopts("e", \%options); # Retrieves options from CL
+my $extended = '';
+my $help = '';
+GetOptions ('e|extended' => \$extended, 'h|help' => \$help);
+
+pod2usage( -verbose => 1 ) if $help;
 
 my @devices = (); # Array of hashes. Each hash will be a network device
 
@@ -44,23 +48,23 @@ while (<$ifconfig_fh>) {
 		if (/inet6 addr: (?<ipv6>[a-z0-9:\/]+)/) { $rec->{"IPv6 Address"} = $+{ipv6}; } # IPv6 Address
 		if (/Scope:(?<scope>\w+)/) { $rec->{"Scope"} = $+{scope}; } # Interface scope
 		if (/\s+(?<statusFlags>(\w.+?))  MTU/) { $rec->{"Status Flags"} = $+{statusFlags}; } # Status flags (ON, RUNNING, LOOPBACK, BROADCAST, MULTICAST, NOTRAILERS)
-		if (/MTU:(?<mtu>\d+)/ && defined $options{e})  { $rec->{"MTU"} = $+{mtu}; } # Maximum Transmission Unit
-		if (/Metric:(?<metric>\d+)/ && defined $options{e})  { $rec->{"Metric"} = $+{metric}; } # Metric
-		if (/RX packets:(?<rxPackets>\d+) errors:(?<rxErrors>\d+) dropped:(?<rxDropped>\d+) overruns:(?<rxOverruns>\d+) frame:(?<rxFrame>\d+)/ && defined $options{e}) { 
+		if (/MTU:(?<mtu>\d+)/ && $extended)  { $rec->{"MTU"} = $+{mtu}; } # Maximum Transmission Unit
+		if (/Metric:(?<metric>\d+)/ && $extended)  { $rec->{"Metric"} = $+{metric}; } # Metric
+		if (/RX packets:(?<rxPackets>\d+) errors:(?<rxErrors>\d+) dropped:(?<rxDropped>\d+) overruns:(?<rxOverruns>\d+) frame:(?<rxFrame>\d+)/ && $extended) { 
 			$rec->{"RX Packets"} = $+{rxPackets}; # RX Packets
 			$rec->{"RX Errors"} = $+{rxErrors}; # RX Errors
 			$rec->{"RX Dropped"} = $+{rxDropped}; # RX Dropped
 			$rec->{"RX Overruns"} = $+{rxOverruns}; # RX Overruns
 			$rec->{"RX Frame"} = $+{rxFrame}; # RX Frame
 		}
-		if (/TX packets:(?<txPackets>\d+) errors:(?<txErrors>\d+) dropped:(?<txDropped>\d+) overruns:(?<txOverruns>\d+) carrier:(?<txCarrier>\d+)/ && defined $options{e}) { 
+		if (/TX packets:(?<txPackets>\d+) errors:(?<txErrors>\d+) dropped:(?<txDropped>\d+) overruns:(?<txOverruns>\d+) carrier:(?<txCarrier>\d+)/ && $extended) { 
 			$rec->{"TX Packets"} = $+{txPackets}; # TX Packets
 			$rec->{"TX Errors"} = $+{txErrors}; # TX Errors
 			$rec->{"TX Dropped"} = $+{txDropped}; # TX Dropped
 			$rec->{"TX Overruns"} = $+{txOverruns}; # TX Overruns
 			$rec->{"TX Carrier"} = $+{txCarrier}; # TX Carrier
 		}
-		if (/collisions:(?<txCollisions>\d+) txqueuelen:(?<txQueue>\d+)/ && defined $options{e}) {
+		if (/collisions:(?<txCollisions>\d+) txqueuelen:(?<txQueue>\d+)/ && $extended) {
 			$rec->{"TX Collisions"} = $+{txCollisions}; # TX Collisions
 			$rec->{"TX Queue Length"} = $+{txQueue}; # TX Queue Length
 		}
@@ -70,8 +74,8 @@ while (<$ifconfig_fh>) {
 			$rec->{"TX Bytes"} = $+{txBytes}; # TX byte value
 			$rec->{"TX Formatted"} = $+{txFormatted}; # TX byte value formatted
 		}
-		if (/Interrupt:(?<interrupt>[0-9]+)/ && defined $options{e}) { $rec->{"Interrupt"} = $+{interrupt}; } # IRQ value
-		if (/Base address:(?<baseAddress>[0-9x]+)/ && defined $options{e}) { $rec->{"Base Address"} = $+{baseAddress}; } # Base address
+		if (/Interrupt:(?<interrupt>[0-9]+)/ && $extended) { $rec->{"Interrupt"} = $+{interrupt}; } # IRQ value
+		if (/Base address:(?<baseAddress>[0-9x]+)/ && $extended) { $rec->{"Base Address"} = $+{baseAddress}; } # Base address
 	} else { # If a line only contains whitespace, what follows is a new device (or EOF)
 		push (@devices, $rec); # Push the hash reference to the array
 		$rec = {};	# Clear the reference for the next device
@@ -131,28 +135,43 @@ for my $href (@devices) { # Processes each device one at a time
 	if ($status[3]) { print "$status[3]\n"; } else { print "\n"; } # ...followed by fourth status message (if present)
 	printf "  MAC Address:\t\t%-40s", $href->{'MAC Address'} // "Not Defined"; # MAC address...
 	if ($status[4]) { print "$status[4]\n"; } else { print "\n"; } # ...followed by fifth status message (if present)
-	printf "  MTU:\t\t\t%-40s\n", $href->{'MTU'} // "Not Defined" if defined $options{e}; # Maximum transmission unit (extended only)
-	printf "  Scope:\t\t%-40s\n", $href->{'Scope'} // "Not Defined" if defined $options{e}; # Scope (extended only)
-	printf "  Metric:\t\t%-40s\n", $href->{'Metric'} // "Not Defined" if defined $options{e}; # Metric (extended only)
-	printf "  IRQ Value:\t\t%-40s\n", $href->{'Interrupt'} // "Not Defined" if defined $options{e}; # IRQ (extended only)
-	printf "  Base Address:\t\t%-40s\n", $href->{'baseAddress'} // "Not Defined" if defined $options{e}; # Base address (extended only)
+	printf "  MTU:\t\t\t%-40s\n", $href->{'MTU'} // "Not Defined" if $extended; # Maximum transmission unit (extended only)
+	printf "  Scope:\t\t%-40s\n", $href->{'Scope'} // "Not Defined" if $extended; # Scope (extended only)
+	printf "  Metric:\t\t%-40s\n", $href->{'Metric'} // "Not Defined" if $extended; # Metric (extended only)
+	printf "  IRQ Value:\t\t%-40s\n", $href->{'Interrupt'} // "Not Defined" if $extended; # IRQ (extended only)
+	printf "  Base Address:\t\t%-40s\n", $href->{'baseAddress'} // "Not Defined" if $extended; # Base address (extended only)
 	print "\n";
 	# RX and TX values are displayed side-by-side
 	printf "  RX Bytes:\t\t%-40s", $href->{'RX Bytes'} . " ($href->{'RX Formatted'})" // "Not Defined"; # RX bytes and formatted total
 	printf "TX Bytes:\t\t%s\n", $href->{'TX Bytes'} . " ($href->{'TX Formatted'})" // "Not Defined"; # TX bytes and formatted total
-	printf "     Packets:\t\t%-40s", $href->{'RX Packets'} // "Not Defined" if defined $options{e}; # RX packets (extended only)
-	printf "   Packets:\t\t%s\n", $href->{'TX Packets'} // "Not Defined" if defined $options{e}; # TX packets (extended only)
-	printf "     Errors:\t\t%-40s", $href->{'RX Errors'} // "Not Defined" if defined $options{e}; # RX errors (extended only)
-	printf "   Errors:\t\t%s\n", $href->{'TX Errors'} // "Not Defined" if defined $options{e}; # TX errors (extended only)
-	printf "     Dropped:\t\t%-40s", $href->{'RX Dropped'} // "Not Defined" if defined $options{e}; # RX dropped (extended only)
-	printf "   Dropped:\t\t%s\n", $href->{'TX Dropped'} // "Not Defined" if defined $options{e}; # TX dropped (extended only)
-	printf "     Overruns:\t\t%-40s", $href->{'RX Overruns'} // "Not Defined" if defined $options{e}; # RX overruns (extended only)
-	printf "   Overruns:\t\t%s\n", $href->{'TX Overruns'} // "Not Defined" if defined $options{e}; # TX overruns (extended only)
-	printf "     Frame:\t\t%-40s", $href->{'RX Frame'} // "Not Defined" if defined $options{e}; # RX frame (extended only)
-	printf "   Carrier:\t\t%s\n", $href->{'TX Carrier'} // "Not Defined" if defined $options{e}; # TX carrier (extended only)
-	printf "\t\t\t\t\t\t\t\t" if defined $options{e}; # Tabs to line up with TX
-	printf "   Collisions:\t\t%s\n", $href->{'TX Collisions'} // "Not Defined" if defined $options{e}; # TX collisions (extended only)
-	printf "\t\t\t\t\t\t\t\t" if defined $options{e}; # Tabs to line up with TX
-	printf "   Queue Length:\t%s\n", $href->{'TX Queue Length'} // "Not Defined" if defined $options{e}; # TX queue length (extended only)
+	printf "     Packets:\t\t%-40s", $href->{'RX Packets'} // "Not Defined" if $extended; # RX packets (extended only)
+	printf "   Packets:\t\t%s\n", $href->{'TX Packets'} // "Not Defined" if $extended; # TX packets (extended only)
+	printf "     Errors:\t\t%-40s", $href->{'RX Errors'} // "Not Defined" if $extended; # RX errors (extended only)
+	printf "   Errors:\t\t%s\n", $href->{'TX Errors'} // "Not Defined" if $extended; # TX errors (extended only)
+	printf "     Dropped:\t\t%-40s", $href->{'RX Dropped'} // "Not Defined" if $extended; # RX dropped (extended only)
+	printf "   Dropped:\t\t%s\n", $href->{'TX Dropped'} // "Not Defined" if $extended; # TX dropped (extended only)
+	printf "     Overruns:\t\t%-40s", $href->{'RX Overruns'} // "Not Defined" if $extended; # RX overruns (extended only)
+	printf "   Overruns:\t\t%s\n", $href->{'TX Overruns'} // "Not Defined" if $extended; # TX overruns (extended only)
+	printf "     Frame:\t\t%-40s", $href->{'RX Frame'} // "Not Defined" if $extended; # RX frame (extended only)
+	printf "   Carrier:\t\t%s\n", $href->{'TX Carrier'} // "Not Defined" if $extended; # TX carrier (extended only)
+	printf "\t\t\t\t\t\t\t\t" if $extended; # Tabs to line up with TX
+	printf "   Collisions:\t\t%s\n", $href->{'TX Collisions'} // "Not Defined" if $extended; # TX collisions (extended only)
+	printf "\t\t\t\t\t\t\t\t" if $extended; # Tabs to line up with TX
+	printf "   Queue Length:\t%s\n", $href->{'TX Queue Length'} // "Not Defined" if $extended; # TX queue length (extended only)
 	print "\n";
 }
+
+__END__
+
+=head1 USAGE
+
+Usage:
+  ./clean-ifconfig [OPTION]
+
+=head1 OPTIONS
+
+Options:
+  -e, --extended	Display xtended output
+  -h, --help		Display help
+
+

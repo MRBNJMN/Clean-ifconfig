@@ -8,7 +8,8 @@ clean-ifconfig.pl - Contains all code. Run in a Perl environment.
 
 ## Usage
 Standard: `$ ./clean-ifconfig.pl`  
-Extended: `$ ./clean-ifconfig.pl -e`
+Extended: `$ ./clean-ifconfig.pl -e`  
+Help: `$ ./clean-ifconfig.pl -h`
 
 ## Known Issues
 The RegEx to pull text after `Link encap:` takes a shortcut. There's at least two possibilities for this output:

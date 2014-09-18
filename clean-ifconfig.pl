@@ -165,13 +165,11 @@ __END__
 
 =head1 USAGE
 
-Usage:
   ./clean-ifconfig [OPTION]
 
 =head1 OPTIONS
 
-Options:
-  -e, --extended	Display xtended output
+  -e, --extended	Display extended output 
   -h, --help		Display help
 
 

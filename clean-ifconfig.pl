@@ -165,7 +165,7 @@ __END__
 
 =head1 USAGE
 
-  ./clean-ifconfig [OPTION]
+  ./clean-ifconfig.pl [OPTION]
 
 =head1 OPTIONS
 
